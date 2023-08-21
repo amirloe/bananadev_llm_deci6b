@@ -5,19 +5,21 @@ import torch
 
 app = Potassium("my_app")
 
+
 # @app.init runs at startup, and loads models into the app's context
 @app.init
 def init():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base")
-    model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device=device)
-   
+    model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device_map="auto")
+
     context = {
         "model": model,
         "tokenizer": tokenizer
     }
 
     return context
+
 
 # @app.handler runs for every call
 @app.handler()
@@ -38,10 +40,11 @@ def handler(context: dict, request: Request) -> Response:
     output = np.argmax(words_logits, axis=1)
 
     return Response(
-        json = {"logits": words_logits.tolist(),
-                "output": output.tolist()},
+        json={"logits": words_logits.tolist(),
+              "output": output.tolist()},
         status=200
     )
 
+
 if __name__ == "__main__":
-    app.serve()
+    app.serve("127.0.0.1")
