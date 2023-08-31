@@ -26,6 +26,9 @@ def init():
 # @app.handler runs for every call
 @app.handler()
 def handler(context: dict, request: Request) -> Response:
+    """
+    test
+    """
     if request.json.get("type", "") == "yesno":
         device = "cuda" if torch.cuda.is_available() else "cpu"
         prompts = request.json.get("prompts")
