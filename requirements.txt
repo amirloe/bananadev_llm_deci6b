@@ -3,4 +3,5 @@ torch
 transformers
 sentencepiece
 accelerate
+protobuf
 sentence_transformers
