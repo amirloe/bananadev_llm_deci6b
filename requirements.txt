@@ -3,3 +3,4 @@ torch
 transformers
 sentencepiece
 accelerate
+sentence_transformers==2.2.2
