@@ -2,7 +2,7 @@ import numpy as np
 from potassium import Potassium, Request, Response
 from transformers import T5Tokenizer, T5Model, T5ForConditionalGeneration
 from sentence_transformers import SentenceTransformer
-import torch
+import torch, gc
 
 app = Potassium("my_app")
 
@@ -29,6 +29,9 @@ def handler(context: dict, request: Request) -> Response:
     """
     test
     """
+    
+    gc.collect()
+    torch.cuda.empty_cache()
     if request.json.get("type", "") == "yesno":
         device = "cuda" if torch.cuda.is_available() else "cpu"
         prompts = request.json.get("prompts")
