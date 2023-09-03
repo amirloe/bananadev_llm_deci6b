@@ -13,7 +13,7 @@ def init():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base")
     model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device_map="auto")
-    sentence_model = SentenceTransformer('BAAI/bge-small-en')
+    # sentence_model = SentenceTransformer('BAAI/bge-small-en')
     context = {
         "model": model,
         "tokenizer": tokenizer,

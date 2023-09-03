@@ -10,7 +10,7 @@ def download_model():
     # do a dry run of loading the huggingface model, which will download weights
     T5Tokenizer.from_pretrained("google/flan-t5-base")
     T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device_map="auto")
-    SentenceTransformer('BAAI/bge-small-en')
+    # SentenceTransformer('BAAI/bge-small-en')
 
 
 if __name__ == "__main__":
