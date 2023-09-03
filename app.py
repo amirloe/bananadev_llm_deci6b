@@ -17,7 +17,7 @@ def init():
     context = {
         "model": model,
         "tokenizer": tokenizer,
-        "sentence_model": sentence_model,
+        "sentence_model": None,
     }
 
     return context
