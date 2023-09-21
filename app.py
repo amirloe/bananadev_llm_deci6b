@@ -1,7 +1,7 @@
 import numpy as np
 from potassium import Potassium, Request, Response
-from transformers import T5Tokenizer, T5Model, T5ForConditionalGeneration
-from sentence_transformers import SentenceTransformer
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import re
 import torch, gc
 
 app = Potassium("my_app")
@@ -10,14 +10,13 @@ app = Potassium("my_app")
 # @app.init runs at startup, and loads models into the app's context
 @app.init
 def init():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base")
-    model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device_map="auto")
-    sentence_model = SentenceTransformer('BAAI/bge-small-en')
+    checkpoint = "Deci/DeciLM-6b-instruct"
+    device = "cuda"  if torch.cuda.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.bfloat16, trust_remote_code=True).to(device)
     context = {
         "model": model,
         "tokenizer": tokenizer,
-        "sentence_model": sentence_model,
     }
 
     return context
@@ -29,37 +28,28 @@ def handler(context: dict, request: Request) -> Response:
     """
     test
     """
-    
+    device = "cuda"  if torch.cuda.is_available() else "cpu"
     gc.collect()
     torch.cuda.empty_cache()
-    if request.json.get("type", "") == "yesno":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        prompts = request.json.get("prompts")
-        word_list = request.json.get("word_list")
-        model = context.get("model")
-        tokenizer = context.get("tokenizer")
-        tokens = [tokenizer.encode(word)[0] for word in word_list]
-        input_ids = tokenizer(prompts, return_tensors="pt", padding=True).input_ids.to(device)
-        decoder_input_ids = tokenizer(prompts, return_tensors="pt", padding=True).input_ids
-        decoder_input_ids = model._shift_right(decoder_input_ids).to(device)
-        output = model(input_ids, decoder_input_ids=decoder_input_ids)
-        logits = output.logits.to("cpu").detach().numpy()
-        words_logits = logits[:, 0, tokens]
-        output = np.argmax(words_logits, axis=1)
+    prompts = request.json.get("prompts")
+    output_tokens = []
+    for text in prompts:
+        inputs = context['tokenizer'].encode(text, return_tensors="pt").to(device)
+        outputs = context['model'].generate(inputs, max_new_tokens=20, do_sample=False, top_p=0.95)
+        out_text = context['tokenizer'].decode(outputs[0])
+        # find with regex the token after  #Answer: and before <\s>
+        # output_token = re.search(r"#Answer: (.*)<\s>", out_text).group(1)
+        output_token = re.findall(r"#Answer:\n(.*)</s>", out_text)
+        output_token = output_token[0] if len(output_token) > 0 else ""
+        output_tokens.append(output_token)
 
-        return Response(
-            json={"logits": words_logits.tolist(),
-                "output": output.tolist()},
-            status=200
-        )
-    elif request.json.get("type", "") == "sentence":
-        model = context.get("sentence_model")
-        sentence = request.json.get("sentence")
-        embedding = model.encode([sentence])[0]
-        return Response(
-            json={"embedding": embedding.tolist()},
-            status=200
-        )
+
+    return Response(
+        json={
+            "outputs": output_tokens},
+        status=200
+    )
+
     
 
 

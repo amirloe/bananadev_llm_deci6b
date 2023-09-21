@@ -2,15 +2,16 @@
 # It runs during container build time to get model weights built into the container
 
 # In this example: A Huggingface BERT model
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from transformers import T5Tokenizer, T5Model, T5ForConditionalGeneration
-from sentence_transformers import SentenceTransformer
 
 def download_model():
     # do a dry run of loading the huggingface model, which will download weights
-    T5Tokenizer.from_pretrained("google/flan-t5-base")
-    T5ForConditionalGeneration.from_pretrained("google/flan-t5-base", device_map="auto")
-    SentenceTransformer('BAAI/bge-small-en')
+    checkpoint = "Deci/DeciLM-6b-instruct"
+    device = "cuda"  if torch.cuda.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.bfloat16, trust_remote_code=True).to(device)
 
 
 if __name__ == "__main__":
